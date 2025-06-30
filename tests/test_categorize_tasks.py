@@ -10,7 +10,7 @@ from data.processor import JiraDataProcessor
 
 def test_categorize_tasks():
     data = {
-        'Issue Type': ['Task'] * 4,
+        'Work type': ['Task'] * 4,
         'Issue key': ['1', '2', '3', '4'],
         'Issue id': [1, 2, 3, 4],
         'Summary': ['a', 'b', 'c', 'd'],

@@ -17,7 +17,7 @@ class JiraDataProcessor:
     """
     
     REQUIRED_COLUMNS = [
-        'Issue Type', 'Issue key', 'Issue id', 'Summary', 'Assignee', 
+        'Work type', 'Issue key', 'Issue id', 'Summary', 'Assignee', 
         'Assignee Id', 'Reporter', 'Reporter Id', 'Priority', 'Status', 
         'Resolution', 'Created', 'Updated', 'Due date', 'Original estimate',
         'Parent', 'Parent summary', 'Description', 'Sprint'

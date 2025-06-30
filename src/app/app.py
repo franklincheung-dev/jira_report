@@ -349,7 +349,7 @@ def get_issue_types():
     if processor.data is None:
         return jsonify({'status': 'error', 'message': 'No data available.'})
     
-    issue_types = processor.data['Issue Type'].unique().tolist()
+    issue_types = processor.data['Work type'].unique().tolist()
     
     return jsonify({
         'status': 'success',

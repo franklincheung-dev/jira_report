@@ -9,7 +9,7 @@ from data.storage import ReportStorage
 
 def sample_dataframe():
     data = {
-        'Issue Type': ['Task', 'Task'],
+        'Work type': ['Task', 'Task'],
         'Issue key': ['A-1', 'A-2'],
         'Issue id': [1, 2],
         'Summary': ['a', 'b'],
