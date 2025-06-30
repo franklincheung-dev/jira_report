@@ -720,12 +720,67 @@ body {
     .sidebar {
         padding-right: 15px;
     }
-    
+
     .chart-card {
         height: auto;
     }
-    
+
     .header h1 {
         font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-bubble {
+        display: block;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .sidebar {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .chart-card,
+    .blockers-card,
+    .forecast-card {
+        height: auto;
+    }
+}
+
+@media (max-width: 576px) {
+    .header h1 {
+        font-size: 1.25rem;
+    }
+}
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 1cm;
+    }
+
+    body {
+        -webkit-print-color-adjust: exact;
+    }
+
+    .sidebar,
+    #upload-prompt,
+    #loading,
+    #export-pdf {
+        display: none !important;
+    }
+
+    .dashboard-area {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .content {
+        padding: 0;
     }
 }

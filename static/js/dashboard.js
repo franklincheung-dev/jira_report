@@ -1855,7 +1855,7 @@ function renderProjectBubbles(projects) {
     }
 
     /**
-     * Export the current dashboard as a PDF file
+     * Export the dashboard using the browser's PDF printer
      */
     $('#export-pdf').click(function() {
         const element = document.getElementById('dashboard-container');
@@ -1864,17 +1864,7 @@ function renderProjectBubbles(projects) {
             return;
         }
 
-        html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth ? pdf.internal.pageSize.getWidth() : pdf.internal.pageSize.width;
-            const pageHeight = (canvas.height * pageWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-            pdf.save('sprint_report.pdf');
-        }).catch(err => {
-            console.error('Error generating PDF:', err);
-            alert('Failed to generate PDF.');
-        });
+        window.print();
     });
     
     // Responsive tweaks for filter bubbles, chart containers, and metric cards
