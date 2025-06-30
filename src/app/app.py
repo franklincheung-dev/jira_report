@@ -204,6 +204,8 @@ def archive_sprint():
         team_capacity_hours=None,
         sprint_index=sprint_index
     )
+    assignees = processor.get_assignee_data(sprint_index)
+    projects = processor.get_project_data(sprint_index)
 
     # Get all sprints for additional context
     all_sprints = processor.get_all_sprints()
@@ -236,7 +238,9 @@ def archive_sprint():
         'archive_id': archive_id,
         'date_archived': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'metrics': metrics,
-        'dashboard': dashboard
+        'dashboard': dashboard,
+        'assignees': assignees,
+        'projects': projects
     }
     
     # Save to persistent storage

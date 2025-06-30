@@ -442,7 +442,7 @@ class JiraDataProcessor:
                     'assignee': assignee,
                     'total_points': float(assignee_total_points),
                     'completed_points': float(assignee_completed_points),
-                    'completion_rate': float(assignee_completed_points / assignee_total_points * 100) if total_points > 0 else 0.0
+                    'completion_rate': float(assignee_completed_points / assignee_total_points * 100) if assignee_total_points > 0 else 0.0
                 })
                 assignee_distribution[assignee] = float(assignee_total_points)
 

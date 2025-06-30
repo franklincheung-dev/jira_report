@@ -1815,13 +1815,19 @@ function renderProjectBubbles(projects) {
             type: 'GET',
             success: function(response) {
                 if (response.status === 'success' && response.archived_sprint) {
-                    const dashboard = response.archived_sprint.dashboard;
+                    const sprint = response.archived_sprint;
+                    const dashboard = sprint.dashboard;
                     if (dashboard) {
                         currentDashboardData = dashboard;
                         updateDashboard(dashboard);
-                    } else if (response.archived_sprint.metrics) {
-                        // Fallback if only metrics were stored
-                        updateDashboard(generateDashboardFromMetrics(response.archived_sprint.metrics));
+                    } else if (sprint.metrics) {
+                        updateDashboard(generateDashboardFromMetrics(sprint.metrics));
+                    }
+                    if (sprint.assignees) {
+                        renderAssigneeBubbles(sprint.assignees);
+                    }
+                    if (sprint.projects) {
+                        renderProjectBubbles(sprint.projects);
                     }
                 } else {
                     console.error('Error loading archived sprint:', response.message);
