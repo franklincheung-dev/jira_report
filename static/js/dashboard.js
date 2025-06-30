@@ -444,7 +444,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('completion-chart', chartData, {responsive: true});
+                Plotly.newPlot('completion-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering completion chart:', error);
             }
@@ -463,7 +463,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('billable-chart', chartData, {responsive: true});
+                Plotly.newPlot('billable-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering billable chart:', error);
             }
@@ -482,7 +482,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('capacity-chart', chartData, {responsive: true});
+                Plotly.newPlot('capacity-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering capacity chart:', error);
             }
@@ -501,7 +501,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('velocity-chart', chartData, {responsive: true});
+                Plotly.newPlot('velocity-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering velocity chart:', error);
             }
@@ -1828,6 +1828,9 @@ function renderProjectBubbles(projects) {
                     }
                     if (sprint.projects) {
                         renderProjectBubbles(sprint.projects);
+                        projectDataMap = {};
+                        sprint.projects.forEach(p => { projectDataMap[p.name] = p; });
+                        populateWorkloadProjectBubbles(sprint.projects);
                     }
                 } else {
                     console.error('Error loading archived sprint:', response.message);
@@ -1864,9 +1867,9 @@ function renderProjectBubbles(projects) {
         html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            const pageWidth = pdf.internal.pageSize.getWidth ? pdf.internal.pageSize.getWidth() : pdf.internal.pageSize.width;
+            const pageHeight = (canvas.height * pageWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
             pdf.save('sprint_report.pdf');
         }).catch(err => {
             console.error('Error generating PDF:', err);
