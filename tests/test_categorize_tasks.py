@@ -1,5 +1,11 @@
+import sys
+from pathlib import Path
+
 import pandas as pd
-from src.data import JiraDataProcessor
+
+# Ensure the src package is importable when tests are run directly
+sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
+from data.processor import JiraDataProcessor
 
 
 def test_categorize_tasks():
