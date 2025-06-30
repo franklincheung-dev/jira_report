@@ -7,6 +7,7 @@ $(document).ready(function() {
     let currentSprintIndex = -1;
     let currentDashboardData = null;
     let projectDataMap = {};
+    let selectedWorkloadProjects = [];
     
     // Load archived sprints when the page loads
     loadArchivedSprints();
@@ -355,8 +356,8 @@ $(document).ready(function() {
                         projectDataMap[p.name] = p;
                     });
 
-                    // Populate project multi-select for workload table
-                    populateWorkloadProjectSelect(response.projects);
+                    // Populate project bubbles for workload table
+                    populateWorkloadProjectBubbles(response.projects);
                 } else {
                     console.error('Error in project data response:', response.message || 'Unknown error');
                 }
@@ -888,15 +889,33 @@ function renderProjectBubbles(projects) {
     /**
      * Populate the multi-select dropdown for workload table
      */
-    function populateWorkloadProjectSelect(projects) {
-        const select = $('#workload-project-select');
-        if (select.length === 0) return;
+    function populateWorkloadProjectBubbles(projects) {
+        const container = $('#workload-project-bubbles');
+        if (container.length === 0) return;
 
-        select.empty();
+        container.empty();
+        selectedWorkloadProjects = [];
         projects.forEach(project => {
-            select.append(`<option value="${project.name}">${project.name}</option>`);
+            const bubble = $(
+                `<div class="filter-bubble workload-project-bubble" data-project="${project.name}">${project.name}</div>`
+            );
+
+            bubble.click(function() {
+                $(this).toggleClass('active');
+                const name = $(this).data('project');
+                if ($(this).hasClass('active')) {
+                    if (!selectedWorkloadProjects.includes(name)) {
+                        selectedWorkloadProjects.push(name);
+                    }
+                } else {
+                    selectedWorkloadProjects = selectedWorkloadProjects.filter(p => p !== name);
+                }
+                updateWorkloadTable();
+            });
+
+            container.append(bubble);
         });
-        // Trigger table update on initial load
+
         updateWorkloadTable();
     }
 
@@ -904,7 +923,7 @@ function renderProjectBubbles(projects) {
      * Update workload table based on selected projects
      */
     function updateWorkloadTable() {
-        const selected = $('#workload-project-select').val();
+        const selected = selectedWorkloadProjects;
         const table = $('#workload-table');
         if (table.length === 0) return;
 
@@ -945,10 +964,15 @@ function renderProjectBubbles(projects) {
 
         // Build body
         tbody.empty();
+
+        const columnTotals = {};
+        selected.forEach(p => { columnTotals[p] = 0; });
+
         assignees.forEach(a => {
             let rowHtml = `<tr><td>${a}</td>`;
             selected.forEach(p => {
                 const hrs = projectDataMap[p]?.assignee_distribution[a] || 0;
+                columnTotals[p] += hrs;
                 let pct = maxHours > 0 ? hrs / maxHours : 0;
                 let cls = '';
                 if (pct > 0.66) cls = 'table-danger';
@@ -959,6 +983,14 @@ function renderProjectBubbles(projects) {
             rowHtml += '</tr>';
             tbody.append(rowHtml);
         });
+
+        // Totals row
+        let totalRowHtml = '<tr><th>Total</th>';
+        selected.forEach(p => {
+            totalRowHtml += `<th>${columnTotals[p].toFixed(1)}</th>`;
+        });
+        totalRowHtml += '</tr>';
+        tbody.append(totalRowHtml);
     }
     
     /**
@@ -1779,6 +1811,5 @@ function renderProjectBubbles(projects) {
     applyMobileResponsiveTweaks();
     $(window).on('resize', applyMobileResponsiveTweaks);
 
-    // Update workload table when project selection changes
-    $('#workload-project-select').on('change', updateWorkloadTable);
+    // No additional handlers needed: bubble clicks update the table
 });
