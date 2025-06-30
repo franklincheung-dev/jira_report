@@ -4,6 +4,7 @@ Persistent storage for sprint reports and other application data.
 
 import os
 import json
+import math
 from pathlib import Path
 import datetime
 from typing import Dict, Any, List
@@ -29,9 +30,21 @@ class ReportStorage:
         
         # Create directory if it doesn't exist
         os.makedirs(self.storage_dir, exist_ok=True)
-        
+
         # Cache for in-memory access
         self.reports_cache = {}
+
+    def _sanitize_for_json(self, obj):
+        """Recursively replace NaN and Infinity values with 0."""
+        if isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return 0
+            return obj
+        if isinstance(obj, dict):
+            return {k: self._sanitize_for_json(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [self._sanitize_for_json(v) for v in obj]
+        return obj
     
     def save_sprint_report(self, session_id: str, report_data: Dict[str, Any]) -> str:
         """
@@ -58,8 +71,9 @@ class ReportStorage:
         if 'date_archived' not in report_data:
             report_data['date_archived'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+        sanitized = self._sanitize_for_json(report_data)
         with open(report_path, 'w') as f:
-            json.dump(report_data, f, indent=2)
+            json.dump(sanitized, f, indent=2, default=str)
         
         # Update cache
         if session_id not in self.reports_cache:

@@ -444,7 +444,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('completion-chart', chartData, {responsive: true});
+                Plotly.newPlot('completion-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering completion chart:', error);
             }
@@ -463,7 +463,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('billable-chart', chartData, {responsive: true});
+                Plotly.newPlot('billable-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering billable chart:', error);
             }
@@ -482,7 +482,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('capacity-chart', chartData, {responsive: true});
+                Plotly.newPlot('capacity-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering capacity chart:', error);
             }
@@ -501,7 +501,7 @@ $(document).ready(function() {
                     return;
                 }
                 
-                Plotly.newPlot('velocity-chart', chartData, {responsive: true});
+                Plotly.newPlot('velocity-chart', chartData.data || chartData, chartData.layout || {}, {responsive: true});
             } catch (error) {
                 console.error('Error rendering velocity chart:', error);
             }
@@ -1773,8 +1773,29 @@ function renderProjectBubbles(projects) {
             type: 'GET',
             success: function(response) {
                 if (response.status === 'success') {
-                    // Populate sprint dropdown with archived sprints
-                    populateSprintDropdown(response.sprints);
+                    const reports = response.archived_sprints || [];
+
+                    // Populate sprint dropdown with archived sprints (for quick selection)
+                    populateSprintDropdown(reports);
+
+                    // Update sidebar list
+                    const $list = $('#archived-sprints-list');
+                    $list.empty();
+
+                    if (reports.length === 0) {
+                        $list.html('<p class="text-muted">No archived sprints yet.</p>');
+                    } else {
+                        reports.forEach(r => {
+                            const item = $('<div class="archived-item mb-2"></div>');
+                            item.text(`${r.sprint_name} (${r.date_archived})`);
+
+                            const btn = $('<button class="btn btn-sm btn-outline-primary ms-2">View</button>');
+                            btn.click(function() { loadArchivedSprint(r.id); });
+                            item.append(btn);
+
+                            $list.append(item);
+                        });
+                    }
                 } else {
                     console.error('Error loading archived sprints:', response.message);
                 }
@@ -1784,6 +1805,67 @@ function renderProjectBubbles(projects) {
             }
         });
     }
+
+    /**
+     * Fetch a specific archived sprint and display it
+     */
+    function loadArchivedSprint(archiveId) {
+        $.ajax({
+            url: `/get-archived-sprint/${archiveId}`,
+            type: 'GET',
+            success: function(response) {
+                if (response.status === 'success' && response.archived_sprint) {
+                    const sprint = response.archived_sprint;
+                    const dashboard = sprint.dashboard;
+                    if (dashboard) {
+                        currentDashboardData = dashboard;
+                        updateDashboard(dashboard);
+                    } else if (sprint.metrics) {
+                        updateDashboard(generateDashboardFromMetrics(sprint.metrics));
+                    }
+                    if (sprint.assignees) {
+                        renderAssigneeBubbles(sprint.assignees);
+                    }
+                    if (sprint.projects) {
+                        renderProjectBubbles(sprint.projects);
+                        projectDataMap = {};
+                        sprint.projects.forEach(p => { projectDataMap[p.name] = p; });
+                        populateWorkloadProjectBubbles(sprint.projects);
+                    }
+                } else {
+                    console.error('Error loading archived sprint:', response.message);
+                }
+            },
+            error: function() {
+                console.error('Error loading archived sprint');
+            }
+        });
+    }
+
+    // Helper to build minimal dashboard if only metrics are available
+    function generateDashboardFromMetrics(metrics) {
+        return {
+            metrics: metrics,
+            completion_chart: null,
+            billable_chart: null,
+            capacity_chart: null,
+            velocity_chart: null,
+            projected_capacity: null
+        };
+    }
+
+    /**
+     * Export the dashboard using the browser's PDF printer
+     */
+    $('#export-pdf').click(function() {
+        const element = document.getElementById('dashboard-container');
+        if (!element || $(element).hasClass('d-none')) {
+            alert('Please generate a dashboard first.');
+            return;
+        }
+
+        window.print();
+    });
     
     // Responsive tweaks for filter bubbles, chart containers, and metric cards
     function applyMobileResponsiveTweaks() {
