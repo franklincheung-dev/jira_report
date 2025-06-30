@@ -1773,8 +1773,29 @@ function renderProjectBubbles(projects) {
             type: 'GET',
             success: function(response) {
                 if (response.status === 'success') {
-                    // Populate sprint dropdown with archived sprints
-                    populateSprintDropdown(response.sprints);
+                    const reports = response.archived_sprints || [];
+
+                    // Populate sprint dropdown with archived sprints (for quick selection)
+                    populateSprintDropdown(reports);
+
+                    // Update sidebar list
+                    const $list = $('#archived-sprints-list');
+                    $list.empty();
+
+                    if (reports.length === 0) {
+                        $list.html('<p class="text-muted">No archived sprints yet.</p>');
+                    } else {
+                        reports.forEach(r => {
+                            const item = $('<div class="archived-item mb-2"></div>');
+                            item.text(`${r.sprint_name} (${r.date_archived})`);
+
+                            const btn = $('<button class="btn btn-sm btn-outline-primary ms-2">View</button>');
+                            btn.click(function() { loadArchivedSprint(r.id); });
+                            item.append(btn);
+
+                            $list.append(item);
+                        });
+                    }
                 } else {
                     console.error('Error loading archived sprints:', response.message);
                 }
@@ -1784,6 +1805,68 @@ function renderProjectBubbles(projects) {
             }
         });
     }
+
+    /**
+     * Fetch a specific archived sprint and display it
+     */
+    function loadArchivedSprint(archiveId) {
+        $.ajax({
+            url: `/get-archived-sprint/${archiveId}`,
+            type: 'GET',
+            success: function(response) {
+                if (response.status === 'success' && response.archived_sprint) {
+                    const dashboard = response.archived_sprint.dashboard;
+                    if (dashboard) {
+                        currentDashboardData = dashboard;
+                        updateDashboard(dashboard);
+                    } else if (response.archived_sprint.metrics) {
+                        // Fallback if only metrics were stored
+                        updateDashboard(generateDashboardFromMetrics(response.archived_sprint.metrics));
+                    }
+                } else {
+                    console.error('Error loading archived sprint:', response.message);
+                }
+            },
+            error: function() {
+                console.error('Error loading archived sprint');
+            }
+        });
+    }
+
+    // Helper to build minimal dashboard if only metrics are available
+    function generateDashboardFromMetrics(metrics) {
+        return {
+            metrics: metrics,
+            completion_chart: null,
+            billable_chart: null,
+            capacity_chart: null,
+            velocity_chart: null,
+            projected_capacity: null
+        };
+    }
+
+    /**
+     * Export the current dashboard as a PDF file
+     */
+    $('#export-pdf').click(function() {
+        const element = document.getElementById('dashboard-container');
+        if (!element || $(element).hasClass('d-none')) {
+            alert('Please generate a dashboard first.');
+            return;
+        }
+
+        html2canvas(element, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save('sprint_report.pdf');
+        }).catch(err => {
+            console.error('Error generating PDF:', err);
+            alert('Failed to generate PDF.');
+        });
+    });
     
     // Responsive tweaks for filter bubbles, chart containers, and metric cards
     function applyMobileResponsiveTweaks() {

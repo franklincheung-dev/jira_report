@@ -135,7 +135,7 @@ def get_dashboard():
     metrics = processor.calculate_sprint_metrics(sprint_data)
     velocity_data = processor.calculate_velocity_trend()
     scope_change = processor.calculate_scope_change(sprint_data)
-    
+
     # Calculate projected capacity using the enhanced method with moving average
     # Pass team_capacity to the projection if it's available
     projected_capacity = processor.project_future_capacity(
@@ -195,9 +195,16 @@ def archive_sprint():
     # Get sprint data
     sprint_data = processor.get_sprint_data(sprint_index)
     
-    # Calculate metrics
+    # Calculate metrics and supporting data for archive
     metrics = processor.calculate_sprint_metrics(sprint_data)
-    
+    velocity_data = processor.calculate_velocity_trend()
+    scope_change = processor.calculate_scope_change(sprint_data)
+    projected_capacity = processor.project_future_capacity(
+        sprints_to_consider=4,
+        team_capacity_hours=None,
+        sprint_index=sprint_index
+    )
+
     # Get all sprints for additional context
     all_sprints = processor.get_all_sprints()
     current_sprint_details = None
@@ -211,6 +218,15 @@ def archive_sprint():
     # Add sprint details to the metrics if available
     if current_sprint_details:
         metrics['sprint_details'] = current_sprint_details
+
+    # Build dashboard data so archived reports can be reloaded later
+    dashboard = generate_dashboard(
+        metrics=metrics,
+        team_capacity=0,
+        velocity_data=velocity_data,
+        scope_change=scope_change,
+        projected_capacity=projected_capacity
+    )
     
     # Generate a unique ID for the archived sprint
     archive_id = str(uuid.uuid4())
@@ -219,7 +235,8 @@ def archive_sprint():
     report_data = {
         'archive_id': archive_id,
         'date_archived': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'metrics': metrics
+        'metrics': metrics,
+        'dashboard': dashboard
     }
     
     # Save to persistent storage
