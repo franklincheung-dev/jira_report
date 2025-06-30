@@ -56,6 +56,19 @@ python run.py
 
 3. Upload a Jira CSV export file to get started.
 
+### Run with Docker
+
+1. Build the container:
+```bash
+docker build -t agile-dashboard .
+```
+2. Run the container:
+```bash
+docker run -p 5001:5001 agile-dashboard
+```
+The app will be available at http://localhost:5001
+
+
 ## Usage
 
 1. **Upload Data**: Use the sidebar to upload your Jira CSV export file.
