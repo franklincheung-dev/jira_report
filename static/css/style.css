@@ -708,6 +708,13 @@ body {
     padding: 1rem 0;
 }
 
+/* Workload table colors */
+#workload-table-container td.table-success,
+#workload-table-container td.table-warning,
+#workload-table-container td.table-danger {
+    color: #000;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 992px) {
     .sidebar {
