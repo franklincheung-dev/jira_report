@@ -265,26 +265,32 @@ def get_archived_sprints():
     Get a list of archived sprints.
     """
     session_id = session.get('session_id')
-    
-    if not session_id:
-        # Look for any report folders in the storage directory
-        # This helps when the page is reloaded and the session is lost
+
+    reports: list = []
+
+    if session_id:
+        reports = reports_storage.list_reports(session_id)
+
+    # If no session or no reports found, search all folders for archives
+    if not reports:
         existing_folders = os.listdir(reports_storage.storage_dir)
-        if existing_folders:
-            # Use the first available folder as the session_id
-            session_id = existing_folders[0]
-            # Store it in the session for future requests
-            session['session_id'] = session_id
-            print(f"Restored session from existing folder: {session_id}")
-        else:
-            return jsonify({'status': 'error', 'message': 'No session available.'})
-    
-    # Get reports from persistent storage
-    reports = reports_storage.list_reports(session_id)
-    
+        for folder in existing_folders:
+            folder_path = os.path.join(reports_storage.storage_dir, folder)
+            if os.path.isdir(folder_path):
+                folder_reports = reports_storage.list_reports(folder)
+                if folder_reports:
+                    reports.extend(folder_reports)
+                    if not session_id:
+                        # Use the first folder with reports as the restored session
+                        session['session_id'] = folder
+                        session_id = folder
+
     if not reports:
         return jsonify({'status': 'error', 'message': 'No archived sprints available.'})
-    
+
+    # Sort reports by date (newest first)
+    reports.sort(key=lambda r: r.get('date_archived', ''), reverse=True)
+
     return jsonify({
         'status': 'success',
         'archived_sprints': reports

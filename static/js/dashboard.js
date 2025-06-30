@@ -91,7 +91,7 @@ $(document).ready(function() {
     function populateSprintDropdown(sprints) {
         const $select = $('#sprint-select');
         $select.empty();
-        
+
         if (sprints && sprints.length > 0) {
             // Sort sprints intelligently - this should match backend sorting
             sprints.sort((a, b) => {
@@ -127,8 +127,10 @@ $(document).ready(function() {
                     return { type: 3, year: 0, number: 0, text: sprintName };
                 }
                 
-                const infoA = extractSprintInfo(a.name);
-                const infoB = extractSprintInfo(b.name);
+                const nameA = a.name || a.sprint_name || '';
+                const nameB = b.name || b.sprint_name || '';
+                const infoA = extractSprintInfo(nameA);
+                const infoB = extractSprintInfo(nameB);
                 
                 // Sort by type first
                 if (infoA.type !== infoB.type) {
@@ -149,14 +151,17 @@ $(document).ready(function() {
                 return infoA.text.localeCompare(infoB.text);
             });
             
-            // Update indices after sorting
+            // Update indices after sorting if they are present
             sprints.forEach((sprint, i) => {
-                sprint.sortedIndex = i;
+                if (sprint.index !== undefined) {
+                    sprint.sortedIndex = i;
+                }
             });
-            
-            sprints.forEach(function(sprint) {
-                // Format the sprint text with additional info if available
-                let sprintText = sprint.name;
+
+            sprints.forEach(function(sprint, idx) {
+                // Support both current and archived sprint objects
+                const sprintName = sprint.name || sprint.sprint_name || `Sprint ${idx + 1}`;
+                let sprintText = sprintName;
                 
                 // Add details (total points, completion) if available
                 if (sprint.total_points !== undefined && sprint.total_points > 0) {
@@ -165,12 +170,16 @@ $(document).ready(function() {
                     sprintText += ` (${sprint.completed_points}/${sprint.total_points} hrs, ${completionPercentage}%)`;
                 }
                 
-                $select.append(`<option value="${sprint.index}">${sprintText}</option>`);
+                const value = sprint.index !== undefined ? sprint.index : (sprint.id || idx);
+                $select.append(`<option value="${value}">${sprintText}</option>`);
             });
-            
+
             // Select the most recent sprint by default
-            $select.val(sprints[sprints.length - 1].index);
-            currentSprintIndex = sprints[sprints.length - 1].index;
+            const lastSprint = sprints[sprints.length - 1];
+            if (lastSprint && lastSprint.index !== undefined) {
+                $select.val(lastSprint.index);
+                currentSprintIndex = lastSprint.index;
+            }
         } else {
             $select.append('<option value="">No sprints available</option>');
         }
