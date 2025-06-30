@@ -6,6 +6,8 @@ $(document).ready(function() {
     // Global variables
     let currentSprintIndex = -1;
     let currentDashboardData = null;
+    let projectDataMap = {};
+    let selectedWorkloadProjects = [];
     
     // Load archived sprints when the page loads
     loadArchivedSprints();
@@ -347,6 +349,15 @@ $(document).ready(function() {
                 if (response.status === 'success') {
                     // Render project filter bubbles
                     renderProjectBubbles(response.projects);
+
+                    // Store project data for workload table
+                    projectDataMap = {};
+                    response.projects.forEach(p => {
+                        projectDataMap[p.name] = p;
+                    });
+
+                    // Populate project bubbles for workload table
+                    populateWorkloadProjectBubbles(response.projects);
                 } else {
                     console.error('Error in project data response:', response.message || 'Unknown error');
                 }
@@ -829,7 +840,7 @@ $(document).ready(function() {
     /**
      * Render project filter bubbles
      */
-    function renderProjectBubbles(projects) {
+function renderProjectBubbles(projects) {
         const container = $('#project-bubbles');
         container.empty();
         
@@ -873,6 +884,113 @@ $(document).ready(function() {
             
             container.append(bubble);
         });
+    }
+
+    /**
+     * Populate the multi-select dropdown for workload table
+     */
+    function populateWorkloadProjectBubbles(projects) {
+        const container = $('#workload-project-bubbles');
+        if (container.length === 0) return;
+
+        container.empty();
+        selectedWorkloadProjects = [];
+        projects.forEach(project => {
+            const bubble = $(
+                `<div class="filter-bubble workload-project-bubble" data-project="${project.name}">${project.name}</div>`
+            );
+
+            bubble.click(function() {
+                $(this).toggleClass('active');
+                const name = $(this).data('project');
+                if ($(this).hasClass('active')) {
+                    if (!selectedWorkloadProjects.includes(name)) {
+                        selectedWorkloadProjects.push(name);
+                    }
+                } else {
+                    selectedWorkloadProjects = selectedWorkloadProjects.filter(p => p !== name);
+                }
+                updateWorkloadTable();
+            });
+
+            container.append(bubble);
+        });
+
+        updateWorkloadTable();
+    }
+
+    /**
+     * Update workload table based on selected projects
+     */
+    function updateWorkloadTable() {
+        const selected = selectedWorkloadProjects;
+        const table = $('#workload-table');
+        if (table.length === 0) return;
+
+        const thead = table.find('thead');
+        const tbody = table.find('tbody');
+
+        if (!selected || selected.length === 0) {
+            thead.empty();
+            tbody.empty();
+            return;
+        }
+
+        // Collect all assignees
+        const assigneeSet = new Set();
+        selected.forEach(p => {
+            const dist = projectDataMap[p]?.assignee_distribution || {};
+            Object.keys(dist).forEach(a => assigneeSet.add(a));
+        });
+        const assignees = Array.from(assigneeSet).sort();
+
+        // Find max hours for color scaling
+        let maxHours = 0;
+        selected.forEach(p => {
+            const dist = projectDataMap[p]?.assignee_distribution || {};
+            assignees.forEach(a => {
+                const hrs = dist[a] || 0;
+                if (hrs > maxHours) maxHours = hrs;
+            });
+        });
+
+        // Build header
+        let headerHtml = '<tr><th>Assignee</th>';
+        selected.forEach(p => {
+            headerHtml += `<th>${p}</th>`;
+        });
+        headerHtml += '</tr>';
+        thead.html(headerHtml);
+
+        // Build body
+        tbody.empty();
+
+        const columnTotals = {};
+        selected.forEach(p => { columnTotals[p] = 0; });
+
+        assignees.forEach(a => {
+            let rowHtml = `<tr><td>${a}</td>`;
+            selected.forEach(p => {
+                const hrs = projectDataMap[p]?.assignee_distribution[a] || 0;
+                columnTotals[p] += hrs;
+                let pct = maxHours > 0 ? hrs / maxHours : 0;
+                let cls = '';
+                if (pct > 0.66) cls = 'table-danger';
+                else if (pct > 0.33) cls = 'table-warning';
+                else if (pct > 0) cls = 'table-success';
+                rowHtml += `<td class="${cls}">${hrs.toFixed(1)}</td>`;
+            });
+            rowHtml += '</tr>';
+            tbody.append(rowHtml);
+        });
+
+        // Totals row
+        let totalRowHtml = '<tr><th>Total</th>';
+        selected.forEach(p => {
+            totalRowHtml += `<th>${columnTotals[p].toFixed(1)}</th>`;
+        });
+        totalRowHtml += '</tr>';
+        tbody.append(totalRowHtml);
     }
     
     /**
@@ -1692,4 +1810,6 @@ $(document).ready(function() {
     // Call on load and on resize
     applyMobileResponsiveTweaks();
     $(window).on('resize', applyMobileResponsiveTweaks);
+
+    // No additional handlers needed: bubble clicks update the table
 });
