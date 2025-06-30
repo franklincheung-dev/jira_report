@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Project Insights Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row header">
+            <div class="col-12">
+                <h1><i class="fas fa-chart-line"></i> BeNovelty Sprint Dashboard</h1>
+            </div>
+        </div>
+        
+        <div class="row content">
+            <!-- Sidebar for file upload and configuration -->
+            <div class="col-md-3 sidebar">
+                <div class="card upload-section">
+                    <div class="card-header">
+                        <h5><i class="fas fa-upload"></i> Data Input</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="upload-form" enctype="multipart/form-data">
+                            <div class="form-group mb-3">
+                                <label for="file-upload" class="form-label">Upload Jira CSV File</label>
+                                <input type="file" class="form-control" id="file-upload" name="file" accept=".csv">
+                                <small class="form-text text-muted">Select a Jira CSV export file.</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-cloud-upload-alt"></i> Upload
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card sprint-section mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-flag-checkered"></i> Sprint Selection</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-3">
+                            <label for="sprint-select" class="form-label">Select Sprint</label>
+                            <select class="form-control" id="sprint-select" disabled>
+                                <option value="">No sprints available</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="team-capacity" class="form-label">Team Capacity (Hours)</label>
+                            <input type="number" class="form-control" id="team-capacity" value="0" min="0" step="0.5" disabled>
+                            <small class="form-text text-muted">Enter the team's total capacity for this sprint.</small>
+                        </div>
+                        
+                        <button id="generate-dashboard" class="btn btn-success w-100" disabled>
+                            <i class="fas fa-sync-alt"></i> Generate Dashboard
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Configuration section removed as requested -->
+                
+                <div class="card archives-section mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-archive"></i> Archived Reports</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="archived-sprints-list">
+                            <p class="text-muted">No archived sprints yet.</p>
+                        </div>
+                        
+                        <button id="archive-current" class="btn btn-secondary w-100 mt-2" disabled>
+                            <i class="fas fa-save"></i> Archive Current Sprint
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main dashboard area -->
+            <div class="col-md-9 dashboard-area">
+                <div id="loading" class="text-center d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Generating dashboard...</p>
+                </div>
+                
+                <div id="upload-prompt" class="text-center">
+                    <div class="upload-icon">
+                        <i class="fas fa-file-upload fa-5x"></i>
+                    </div>
+                    <h3 class="mt-3">Upload a Jira CSV file to get started</h3>
+                    <p class="text-muted">The dashboard will be generated based on the uploaded data.</p>
+                </div>
+                
+                <div id="dashboard-container" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card summary-card mb-3">
+                                <div class="card-body">
+                                    <h3 id="sprint-name">Sprint Name</h3>
+                                    <span id="sprint-status" class="badge bg-primary">Status</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Interactive filters section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card filter-card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-filter"></i> Filters</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="mb-3">Team Members</h6>
+                                            <div id="assignee-bubbles" class="filter-bubbles mb-3"></div>
+                                            <div id="selected-assignee-info" class="d-none">
+                                                <button id="clear-assignee-filter" class="btn btn-sm btn-outline-secondary mb-2">
+                                                    <i class="fas fa-times"></i> Clear filter
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <h6 class="mb-3">Projects</h6>
+                                            <div id="project-bubbles" class="filter-bubbles mb-3"></div>
+                                            <div id="selected-project-info" class="d-none">
+                                                <button id="clear-project-filter" class="btn btn-sm btn-outline-secondary mb-2">
+                                                    <i class="fas fa-times"></i> Clear filter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Details section for selected filters -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <!-- Assignee detail view (hidden by default) -->
+                            <div id="assignee-detail-view" class="detail-view d-none">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 id="assignee-detail-name"><i class="fas fa-user"></i> Assignee Details</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div id="assignee-completion-chart"></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div id="assignee-occupancy-chart"></div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div id="assignee-category-chart"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-12">
+                                                <h6><i class="fas fa-exclamation-triangle"></i> Blockers</h6>
+                                                <div id="assignee-blockers-list"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Project detail view (hidden by default) -->
+                            <div id="project-detail-view" class="detail-view d-none">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 id="project-detail-name"><i class="fas fa-project-diagram"></i> Project Details</h5>
+                                    </div>
+                                    <!-- New dedicated area for project hours -->
+                                    <div id="project-total-hours" class="text-center py-3 my-2 bg-light rounded">
+                                        <span class="h3 mb-0 me-2 text-primary fw-bold" id="project-hours-value">0</span>
+                                        <span class="text-muted">Total Project Hours</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div id="project-completion-chart"></div>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <div id="project-resource-allocation-chart"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-md-12">
+                                                <h6><i class="fas fa-users"></i> Team Members</h6>
+                                                <div id="project-team-members" class="team-member-bubbles"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-12">
+                                                <h6><i class="fas fa-exclamation-triangle"></i> Project Blockers</h6>
+                                                <div id="project-blockers-list"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add separator between filter section and statistics charts -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="section-separator">
+                                <span class="separator-text">
+                                    <i class="fas fa-chart-bar"></i> Sprint Statistics
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card chart-card mb-3">
+                                <div class="card-body">
+                                    <div id="completion-chart"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="card chart-card mb-3">
+                                <div class="card-body">
+                                    <div id="velocity-chart"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card chart-card mb-3">
+                                <div class="card-body">
+                                    <div id="billable-chart"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card chart-card mb-3">
+                                <div class="card-body">
+                                    <div id="capacity-chart" class="capacity-chart-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card blockers-card mb-3">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-exclamation-triangle"></i> Key Blockers & At-Risk Items</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="blockers-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card forecast-card mb-3">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-chart-line"></i> Future Capacity Forecast</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="capacity-forecast"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row actions">
+                        <div class="col-12 text-end">
+                            <button id="export-pdf" class="btn btn-primary">
+                                <i class="fas fa-file-pdf"></i> Export as PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
+</body>
+</html>
