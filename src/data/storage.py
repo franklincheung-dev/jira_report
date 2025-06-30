@@ -59,7 +59,7 @@ class ReportStorage:
             report_data['date_archived'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         with open(report_path, 'w') as f:
-            json.dump(report_data, f, indent=2)
+            json.dump(report_data, f, indent=2, default=str)
         
         # Update cache
         if session_id not in self.reports_cache:

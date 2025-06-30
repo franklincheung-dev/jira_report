@@ -1855,7 +1855,7 @@ function renderProjectBubbles(projects) {
             return;
         }
 
-        html2canvas(element, { scale: 2 }).then(canvas => {
+        html2canvas(element, { scale: 2, useCORS: true }).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();

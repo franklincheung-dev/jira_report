@@ -823,8 +823,11 @@ class JiraDataProcessor:
             if 'Due date' in sprint_data.columns and not sprint_data.empty and not sprint_data['Due date'].isna().all():
                 # Get the most common due date
                 due_date = sprint_data['Due date'].mode().iloc[0] if not sprint_data['Due date'].mode().empty else None
-                if due_date:
-                    sprint_info['end_date'] = due_date
+                if due_date is not None:
+                    if isinstance(due_date, pd.Timestamp):
+                        sprint_info['end_date'] = due_date.strftime('%Y-%m-%d')
+                    else:
+                        sprint_info['end_date'] = str(due_date)
             
             # Calculate metrics if we have sprint data
             if not sprint_data.empty and 'Original estimate' in sprint_data.columns:
