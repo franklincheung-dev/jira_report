@@ -69,6 +69,15 @@ def upload_file():
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], f"{session_id}_{filename}")
             file.save(filepath)
+
+            # Remove older CSV uploads to save space
+            for f in os.listdir(app.config['UPLOAD_FOLDER']):
+                old_path = os.path.join(app.config['UPLOAD_FOLDER'], f)
+                if old_path != filepath and f.lower().endswith('.csv'):
+                    try:
+                        os.remove(old_path)
+                    except OSError:
+                        pass
             
             # Process the data
             processor = JiraDataProcessor(file_path=filepath)

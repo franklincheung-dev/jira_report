@@ -65,6 +65,14 @@ class JiraDataProcessor:
         Returns:
             bool: True if validation passes, False otherwise
         """
+        # Ensure the first column is labeled 'Issue Type' and maintain a 'Work type' alias
+        if len(self.data.columns) > 0:
+            first_col = self.data.columns[0]
+            if first_col.lower() in ['issue type', 'work type']:
+                self.data.rename(columns={first_col: 'Issue Type'}, inplace=True)
+            if 'Work type' not in self.data.columns:
+                self.data['Work type'] = self.data['Issue Type']
+
         # Check if required columns exist
         missing_columns = [col for col in self.REQUIRED_COLUMNS if col not in self.data.columns]
         if missing_columns:

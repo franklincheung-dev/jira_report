@@ -1798,9 +1798,13 @@ function renderProjectBubbles(projects) {
                             const item = $('<div class="archived-item mb-2"></div>');
                             item.text(`${r.sprint_name} (${r.date_archived})`);
 
-                            const btn = $('<button class="btn btn-sm btn-outline-primary ms-2">View</button>');
-                            btn.click(function() { loadArchivedSprint(r.id); });
-                            item.append(btn);
+                            const viewBtn = $('<button class="btn btn-sm btn-outline-primary ms-2">View</button>');
+                            viewBtn.click(function() { loadArchivedSprint(r.id); });
+                            item.append(viewBtn);
+
+                            const delBtn = $('<button class="btn btn-sm btn-outline-danger ms-2">Delete</button>');
+                            delBtn.click(function() { deleteArchivedSprint(r.id); });
+                            item.append(delBtn);
 
                             $list.append(item);
                         });
@@ -1847,6 +1851,29 @@ function renderProjectBubbles(projects) {
             },
             error: function() {
                 console.error('Error loading archived sprint');
+            }
+        });
+    }
+
+    /**
+     * Delete an archived sprint
+     */
+    function deleteArchivedSprint(archiveId) {
+        if (!confirm('Delete this archived report?')) {
+            return;
+        }
+        $.ajax({
+            url: `/delete-archived-sprint/${archiveId}`,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.status === 'success') {
+                    loadArchivedSprints();
+                } else {
+                    alert('Error deleting report: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error deleting report.');
             }
         });
     }
