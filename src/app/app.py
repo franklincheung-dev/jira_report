@@ -69,6 +69,15 @@ def upload_file():
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], f"{session_id}_{filename}")
             file.save(filepath)
+
+            # Remove older CSV uploads to save space
+            for f in os.listdir(app.config['UPLOAD_FOLDER']):
+                old_path = os.path.join(app.config['UPLOAD_FOLDER'], f)
+                if old_path != filepath and f.lower().endswith('.csv'):
+                    try:
+                        os.remove(old_path)
+                    except OSError:
+                        pass
             
             # Process the data
             processor = JiraDataProcessor(file_path=filepath)
@@ -349,7 +358,9 @@ def get_issue_types():
     if processor.data is None:
         return jsonify({'status': 'error', 'message': 'No data available.'})
     
-    issue_types = processor.data['Work type'].unique().tolist()
+ 
+    issue_types = processor.data['Issue Type'].unique().tolist()
+
     
     return jsonify({
         'status': 'success',
@@ -360,7 +371,7 @@ def get_issue_types():
 @app.route('/delete-archived-sprint/<archive_id>', methods=['DELETE'])
 def delete_archived_sprint(archive_id):
     """
-    Delete a specific archived sprint report.
+    Delete a specific archived sprint report and its containing folder if empty.
     """
     session_id = session.get('session_id')
     
@@ -374,8 +385,16 @@ def delete_archived_sprint(archive_id):
     if session_id in sprint_archives and archive_id in sprint_archives[session_id]:
         del sprint_archives[session_id][archive_id]
     
+    # After deleting the report, check if the session folder is empty and remove it
+    session_folder = os.path.join(reports_storage.storage_dir, session_id)
+    try:
+        if os.path.isdir(session_folder) and not os.listdir(session_folder):
+            os.rmdir(session_folder)
+    except Exception:
+        pass  # Ignore errors if folder can't be deleted
+
     if success:
-        return jsonify({'status': 'success', 'message': 'Report deleted successfully'})
+        return jsonify({'status': 'success', 'message': 'Report and folder deleted successfully'})
     else:
         return jsonify({'status': 'error', 'message': 'Failed to delete report'})
 

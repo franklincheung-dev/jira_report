@@ -90,7 +90,7 @@ The app will be available at http://localhost:5001
 ## Requirements
 
 The application expects a standard Jira CSV export with the following columns:
-- Work type
+- Issue Type
 - Issue key
 - Issue id
 - Summary
