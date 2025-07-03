@@ -17,7 +17,7 @@ class JiraDataProcessor:
     """
     
     REQUIRED_COLUMNS = [
-        'Work type', 'Issue key', 'Issue id', 'Summary', 'Assignee', 
+        'Issue Type', 'Issue key', 'Issue id', 'Summary', 'Assignee', 
         'Assignee Id', 'Reporter', 'Reporter Id', 'Priority', 'Status', 
         'Resolution', 'Created', 'Updated', 'Due date', 'Original estimate',
         'Parent', 'Parent summary', 'Description', 'Sprint'
@@ -70,8 +70,6 @@ class JiraDataProcessor:
             first_col = self.data.columns[0]
             if first_col.lower() in ['issue type', 'work type']:
                 self.data.rename(columns={first_col: 'Issue Type'}, inplace=True)
-            if 'Work type' not in self.data.columns:
-                self.data['Work type'] = self.data['Issue Type']
 
         # Check if required columns exist
         missing_columns = [col for col in self.REQUIRED_COLUMNS if col not in self.data.columns]
