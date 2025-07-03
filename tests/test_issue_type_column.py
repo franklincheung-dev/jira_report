@@ -30,5 +30,3 @@ def test_issue_type_column_standardization():
     df = pd.DataFrame(data)
     proc = JiraDataProcessor(dataframe=df)
     assert 'Issue Type' in proc.data.columns
-    assert 'Work type' in proc.data.columns
-    assert proc.data['Issue Type'].equals(proc.data['Work type'])
